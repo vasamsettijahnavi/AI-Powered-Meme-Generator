@@ -28,11 +28,15 @@ def classify_image(image_url):
     if response.status_code != 200:
         raise ValueError("Failed to fetch the image. Please check the URL.")
     
+    # Print the first 100 characters of the content to inspect it
+    print(f"Response content (first 100 bytes): {response.content[:100]}")
+    
     try:
         img = Image.open(BytesIO(response.content)).convert("RGB")  # Ensure valid image format
     except UnidentifiedImageError:
         raise ValueError("The URL does not point to a valid image file.")
     return img
+
 
 
 # Function to create meme

@@ -1,10 +1,12 @@
 import openai
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import requests
 from io import BytesIO
-import random
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.preprocessing import image
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
 
 # Set OpenAI API key
 openai.api_key = 'YOUR_OPENAI_API_KEY'
@@ -20,7 +22,7 @@ def generate_caption(prompt):
     caption = response.choices[0].text.strip()
     return caption
 
-# Function to load an image and perform object classification (using a CNN model)
+# Function to load an image and perform object classification (using MobileNetV2 model)
 def classify_image(image_url):
     print(f"Fetching image from URL: {image_url}")
     response = requests.get(image_url)
@@ -35,17 +37,28 @@ def classify_image(image_url):
         img = Image.open(BytesIO(response.content)).convert("RGB")  # Ensure valid image format
     except UnidentifiedImageError:
         raise ValueError("The URL does not point to a valid image file.")
-    return img
-
-
+    
+    # Prepare the image for classification (resize, normalize, etc.)
+    img_resized = img.resize((224, 224))  # MobileNetV2 expects 224x224 images
+    img_array = np.array(img_resized)
+    img_array = np.expand_dims(img_array, axis=0)  # Add batch dimension
+    img_array = preprocess_input(img_array)  # Preprocess for MobileNetV2
+    
+    # Classify the image using MobileNetV2
+    model = MobileNetV2(weights="imagenet")
+    predictions = model.predict(img_array)
+    decoded_predictions = decode_predictions(predictions, top=1)[0]
+    
+    # Return the top predicted class
+    top_class = decoded_predictions[0][1]  # Class label (e.g., 'zebra', 'cat', etc.)
+    return top_class, img
 
 # Function to create meme
 def create_meme(image_url):
     # Get a funny caption using GPT-3 based on image context
-    image_classifications = classify_image(image_url)
+    top_class, image_classifications = classify_image(image_url)
     
     # Use the top classification result to generate a context-based prompt
-    top_class = image_classifications[0][1]
     prompt = f"Write a humorous meme caption for an image of a {top_class}. The meme should be funny and related to popular culture."
     
     # Generate caption
@@ -74,3 +87,4 @@ def create_meme(image_url):
 # Example usage
 image_url = 'https://example.com/path_to_image.jpg'  # Replace with an actual image URL
 create_meme(image_url)
+

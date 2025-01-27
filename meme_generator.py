@@ -22,22 +22,18 @@ def generate_caption(prompt):
 
 # Function to load an image and perform object classification (using a CNN model)
 def classify_image(image_url):
-    # Load pre-trained model (MobileNetV2 for example)
-    model = tf.keras.applications.MobileNetV2(weights='imagenet')
-    
-    # Load and preprocess the image
+    print(f"Fetching image from URL: {image_url}")
     response = requests.get(image_url)
-    img = Image.open(BytesIO(response.content))
-    img = img.resize((224, 224))
-    img_array = np.array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
+    print(f"Response status code: {response.status_code}")
+    if response.status_code != 200:
+        raise ValueError("Failed to fetch the image. Please check the URL.")
     
-    # Make prediction
-    predictions = model.predict(img_array)
-    
-    # Decode predictions (using ImageNet classes)
-    decoded_predictions = tf.keras.applications.mobilenet_v2.decode_predictions(predictions, top=3)[0]
-    return decoded_predictions
+    try:
+        img = Image.open(BytesIO(response.content)).convert("RGB")  # Ensure valid image format
+    except UnidentifiedImageError:
+        raise ValueError("The URL does not point to a valid image file.")
+    return img
+
 
 # Function to create meme
 def create_meme(image_url):

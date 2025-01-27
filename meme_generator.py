@@ -27,11 +27,20 @@ def classify_image(image_url):
     print(f"Fetching image from URL: {image_url}")
     response = requests.get(image_url)
     print(f"Response status code: {response.status_code}")
+    
     if response.status_code != 200:
         raise ValueError("Failed to fetch the image. Please check the URL.")
     
-    # Print the first 100 characters of the content to inspect it
-    print(f"Response content (first 100 bytes): {response.content[:100]}")
+    # Check if the content is an image
+    content_type = response.headers.get('Content-Type')
+    if 'image' not in content_type:
+        raise ValueError(f"URL did not return an image, Content-Type: {content_type}")
+    
+    # Save the response to a file to inspect it manually
+    with open("downloaded_image.jpg", "wb") as f:
+        f.write(response.content)
+    
+    print(f"Image saved as 'downloaded_image.jpg' for inspection.")
     
     try:
         img = Image.open(BytesIO(response.content)).convert("RGB")  # Ensure valid image format
@@ -87,4 +96,5 @@ def create_meme(image_url):
 # Example usage
 image_url = 'https://example.com/path_to_image.jpg'  # Replace with an actual image URL
 create_meme(image_url)
+
 
